@@ -35,7 +35,8 @@ export default function Saudacao() {
         textoSaudacao = 'BOA NOITE';
     }
 
-    const dataSaudacao = nomeDiasDaSemana +', '+nomeDoMes + ' de '+ ano;
+    const dataSaudacao =  nomeDiasDaSemana + ', ' +  diaDoMes + ' ' +  nomeDoMes + ' de ' +  ano;
+
   return (
     <View style={style.container}>
       <Text style={style.saudacao}>{textoSaudacao}, ADRIANA!</Text>

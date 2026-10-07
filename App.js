@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import AddModal from './componentes/modal-home';
-import Saudacao from './componentes/saudacao';
+import Saudacao from './componentes/Saudacao';
+import SeletorDias from './componentes/SeletorDias';
 
 export default function App() {
   const [tela, setTela] = useState('inicio');
@@ -23,22 +24,7 @@ export default function App() {
         </View>
 
         {/* Seletor de Dias da Semana */}
-        <View style={styles.diasContainer}>
-          {['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'].map((dia, index) => {
-            const diaNum = 7 + index;
-            const isSelected = dia === 'QUA';
-            return (
-              <View key={dia} style={styles.diaItem}>
-                <Text style={styles.diaTexto}>{dia}</Text>
-                <View style={[styles.circuloDia, isSelected && styles.circuloSelecionado]}>
-                  <Text style={[styles.numeroDiaText, isSelected && styles.numeroSelecionadoText]}>
-                    {diaNum}
-                  </Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
+        <SeletorDias />
 
         <Text style={styles.secaoTitulo}>MEU DAILY DE HOJE:</Text>
 
@@ -191,40 +177,6 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: '#ccc',
-  },
-  diasContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 25,
-  },
-  diaItem: {
-    alignItems: 'center',
-  },
-  diaTexto: {
-    fontSize: 10,
-    color: '#7F8C8D',
-    marginBottom: 6,
-    fontWeight: 'bold',
-  },
-  circuloDia: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#D4A373',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
-  },
-  circuloSelecionado: {
-    backgroundColor: '#E6CCB2',
-  },
-  numeroDiaText: {
-    fontSize: 13,
-    color: '#2C3E21',
-  },
-  numeroSelecionadoText: {
-    fontWeight: 'bold',
   },
   secaoTitulo: {
     fontSize: 14,

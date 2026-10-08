@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
-import AddModal from './componentes/modal-home';
-import Saudacao from './componentes/Saudacao';
-import SeletorDias from './componentes/SeletorDias';
+import AddModal from '../componentes/modal-home';
+import Saudacao from '../componentes/Saudacao';
+import SeletorDias from '../componentes/SeletorDias';
+import CardTarefa from '../componentes/CardTarefa';
+
 
 
 export default function App() {
+  const router = useRouter();
+  
   const [tela, setTela] = useState('inicio');
   const [modalVisible, setModalVisible] = useState(false);
   const [tarefas, setTarefas] = useState([]);
@@ -14,7 +19,7 @@ export default function App() {
   const [tipoCadastro, setTipoCadastro] = useState(null);
   
   return (
-    <View style={styles.container}>
+    <View  style={[styles.container]}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         
         {/* Cabeçalho */}
@@ -33,6 +38,7 @@ export default function App() {
         {/* Lista de Hábitos em Cards */}
 
         <Text style={styles.secaoTitulo}>MEU DAILY DE HOJE:</Text>
+           <CardTarefa />
 
           <View style={styles.tarefaWrapper}>
           <View style={styles.checkboxContainer}>
@@ -133,24 +139,19 @@ export default function App() {
       <AddModal 
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
-       onSelectType={(tipo) => {
+        onSelectType={(tipo) => {
           setModalVisible(false);
-          setTipoCadastro(tipo);
+
+          if (tipo === 'tarefa') {
+            router.push('/cadastroTarefa');
+          }
+          if (tipo === 'habito') {
+            router.push('/categoriaHabito');
+          }
         }}
       />
 
-      {/* Menu Inferior */}
-      <View style={styles.menu}>
-        <TouchableOpacity>
-          <Ionicons name="home" size={26} color="#D4A373" />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Feather name="calendar" size={26} color="#D4A373" />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Feather name="user" size={26} color="#D4A373" />
-        </TouchableOpacity>
-      </View>
+      
     </View>
   );
 }
@@ -159,7 +160,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FBF9F1',
-    paddingTop: 40,
+    paddingTop: 60,
   },
   scrollContainer: {
     paddingHorizontal: 20,
@@ -188,6 +189,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2C3E21',
     marginBottom: 12,
+    fontFamily: 'Iowan Old Style',
   },
   secaoTituloProgresso: {
     fontSize: 14,
@@ -298,17 +300,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2C3E21',
     zIndex: 1,
-  },
-  menu: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    height: 65,
-    backgroundColor: '#3B4D28',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-  
   },
   containerCadastro: {
     flex: 1,

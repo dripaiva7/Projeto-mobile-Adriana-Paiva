@@ -55,6 +55,7 @@ const style = StyleSheet.create({
     color: '#2C3E21',
     fontWeight: 'bold',
     letterSpacing: 0.5,
+    fontFamily: 'Iowan Old Style',
     },
 
     data: {

@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '85%',
-    backgroundColor: '#FDFBF7',
+    backgroundColor: '#D4A373',
     borderRadius: 20,
     padding: 20,
     alignItems: 'center',
@@ -64,6 +64,11 @@ const styles = StyleSheet.create({
   modalCloseButton: {
     alignSelf: 'flex-end',
     padding: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
   },
   modalTitulo: {
     fontSize: 18,
@@ -80,6 +85,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderWidth: 1,
     borderColor: '#E6CCB2',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
   },
   modalOpcaoTitulo: {
     fontSize: 15,

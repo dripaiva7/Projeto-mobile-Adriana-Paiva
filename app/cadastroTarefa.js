@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity,  Keyboard,
-  TouchableWithoutFeedback, Alert} from 'react-native';
+  TouchableWithoutFeedback, Alert, ScrollView} from 'react-native';
 
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CalendarioData from '../componentes/CalendarioData';
+import { collection, addDoc,} from 'firebase/firestore';
+
+import { db } from '../firebaseConfig';
 
 export default function CadastroTarefa() {
 
@@ -21,7 +24,9 @@ export default function CadastroTarefa() {
   const [horarioSelecionado, setHorarioSelecionado] = useState(new Date());
   const [mostrarHorario, setMostrarHorario] = useState(false);
 
-  const salvarTarefa = () => {
+  const scrollViewRef = useRef(null);
+
+  const salvarTarefa = async () => {
   if (!titulo || !descricao || !data) {
     Alert.alert(
       'Atenção',
@@ -37,24 +42,35 @@ export default function CadastroTarefa() {
     horario: horario,
   };
 
-  console.log('Nova tarefa:', novaTarefa);
+    await addDoc(
+      collection(db, 'tarefas'),
+      novaTarefa
+    );
 
-  Alert.alert(
-    'Sucesso!',
-    'Sua tarefa foi cadastrada.',
-    [
-      {
-        text: 'OK',
-        onPress: () => router.back(),
-      },
-    ]
-  );
-};
+    console.log('Nova tarefa salva:', novaTarefa);
+
+    Alert.alert(
+      'Sucesso!',
+      'Sua tarefa foi cadastrada.',
+      [
+        {
+          text: 'OK',
+          onPress: () => router.back(),
+        },
+      ]
+    );
+  };
 
   return (
 
   <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
     <View style={styles.container}>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollContainer}
+      >
 
       {/* Cabeçalho */}
       <View style={styles.cabecalho}>
@@ -134,27 +150,35 @@ export default function CadastroTarefa() {
 
       {/* Horário */}
 
-      <Text style={styles.label}>
-        HORÁRIO: <Text style={styles.opcional}>(Opcional)</Text>
+    <Text style={styles.label}>
+      HORÁRIO: <Text style={styles.opcional}>(Opcional)</Text>
+    </Text>
+
+    <TouchableOpacity
+      style={styles.inputHorario}
+      onPress={() => {
+        setMostrarHorario(true);
+
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({
+            animated: true,
+          });
+        }, 100);
+      }}
+    >
+      <Text style={styles.textoCampo}>
+        {horario || 'Selecione um horário'}
       </Text>
+    </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.inputHorario}
-        onPress={() => setMostrarHorario(true)}
-      >
-        <Text style={styles.textoCampo}>
-          {horario || 'Selecione um horário'}
-        </Text>
-      </TouchableOpacity>
+    {mostrarHorario && (
+      <View style={styles.containerHorario}>
 
-            {mostrarHorario && (
         <DateTimePicker
           value={horarioSelecionado}
           mode="time"
           display="spinner"
           onChange={(_, time) => {
-            setMostrarHorario(false);
-
             if (time) {
               setHorarioSelecionado(time);
 
@@ -165,7 +189,18 @@ export default function CadastroTarefa() {
             }
           }}
         />
-      )}
+
+        <TouchableOpacity
+          style={styles.botaoOkHorario}
+          onPress={() => setMostrarHorario(false)}
+        >
+          <Text style={styles.confirmarHorario}>
+            OK
+          </Text>
+        </TouchableOpacity>
+
+      </View>
+    )}
 
       {/* Botão salvar */}
       <TouchableOpacity
@@ -177,6 +212,8 @@ export default function CadastroTarefa() {
       </Text>
     </TouchableOpacity>
 
+        </ScrollView>
+        
         </View>
       </TouchableWithoutFeedback>
       );
@@ -216,14 +253,15 @@ const styles = StyleSheet.create({
     color: '#2C3E21',
     marginBottom: 5,
     marginLeft: 1,
+    fontWeight: '500',
   },
 
   input: {
-    height: 36,
+    height: 38,
     borderWidth: 1,
     borderColor: '#999999',
     borderRadius: 18,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     fontSize: 12,
     color: '#2C3E21',
     marginBottom: 12,

@@ -1,77 +1,98 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
-  TouchableOpacity,  
-  Keyboard,
-  TouchableWithoutFeedback, 
-  Alert 
-} from 'react-native';
+  View,  Text, StyleSheet, TextInput, TouchableOpacity, Keyboard,
+  TouchableWithoutFeedback, Alert, ScrollView } from 'react-native';
 
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { collection, addDoc,} from 'firebase/firestore';
+
+import { db } from '../firebaseConfig';
+
 
 export default function CadastroHabito() {
   const router = useRouter();
 
   const { categoria } = useLocalSearchParams();
-  const [titulo, setTitulo] = useState('Beber Agua');
-  const [descricao, setDescricao] = useState('2 L ao dia.');
+  const [titulo, setTitulo] = useState('');
+  const [descricao, setDescricao] = useState('');
   
   // Frequência: dias da semana selecionados
-  const [diasSelecionados, setDiasSelecionados] = useState(['QUA']);
+  const [diasSelecionados, setDiasSelecionados] = useState([]);
   const [todosDias, setTodosDias] = useState(false);
 
   const [horario, setHorario] = useState('08:00');
   const [horarioSelecionado, setHorarioSelecionado] = useState(new Date());
   const [mostrarHorario, setMostrarHorario] = useState(false);
+  const scrollViewRef = useRef(null);
 
   const diasDaSemana = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
 
-  const toggleDia = (dia) => {
+  const todosDia = (dia) => {
+    let novosDias;
+
     if (diasSelecionados.includes(dia)) {
-      setDiasSelecionados(diasSelecionados.filter(d => d !== dia));
+      novosDias = diasSelecionados.filter(d => d !== dia);
     } else {
-      setDiasSelecionados([...diasSelecionados, dia]);
+      novosDias = [...diasSelecionados, dia];
     }
+
+    setDiasSelecionados(novosDias);
+
+    setTodosDias(novosDias.length === diasDaSemana.length);
   };
 
-  const salvarHabito = () => {
-    if (!titulo || !descricao) {
-      Alert.alert(
-        'Atenção',
-        'Preencha o título e a descrição do hábito.'
-      );
-      return;
-    }
-
-    const novoHabito = {
-      categoria,
-      titulo,
-      descricao,
-      frequencia: todosDias ? 'Todos os dias' : diasSelecionados,
-      horario,
-    };
-
-    console.log('Novo hábito:', novoHabito);
-
+  const salvarHabito = async () => {
+  if (!titulo || !descricao) {
     Alert.alert(
-      'Sucesso!',
-      'Seu hábito foi cadastrado.',
-      [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]
+      'Atenção',
+      'Preencha o título e a descrição do hábito.'
     );
+    return;
+  }
+
+  if (diasSelecionados.length === 0) {
+    Alert.alert(
+      'Atenção',
+      'Selecione pelo menos um dia da semana.'
+    );
+    return;
+  }
+
+  const novoHabito = {
+    categoria: categoria,
+    titulo: titulo,
+    descricao: descricao,
+    dias: diasSelecionados,
+    horario: horario,
   };
+
+  await addDoc(
+      collection(db, 'habitos'), novoHabito);
+
+    console.log('Novo hábito salvo:', novoHabito);
+
+  Alert.alert(
+    'Sucesso!',
+    'Seu hábito foi cadastrado.',
+    [
+      {
+        text: 'OK',
+        onPress: () => router.back(),
+      },
+    ]
+  );
+};
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
+
+      <ScrollView
+        ref={scrollViewRef}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContainer}
+      >
 
         {/* Cabeçalho */}
         <View style={styles.cabecalho}>
@@ -88,8 +109,9 @@ export default function CadastroHabito() {
           CATEGORIA:
         </Text>
         <TouchableOpacity style={styles.inputDropdown}>
-          <Text style={styles.textoCampo}>💧 {categoria}</Text>
-          <Text style={styles.iconeSeta}>⌄</Text>
+          <Text style={styles.textoCampo}>
+            {categoria}
+          </Text>
         </TouchableOpacity>
 
         {/* Título */}
@@ -99,6 +121,7 @@ export default function CadastroHabito() {
         <TextInput
           style={styles.input}
           placeholder="Digite o título"
+          placeholderTextColor="#A9A29A"
           value={titulo}
           onChangeText={setTitulo}
         />
@@ -111,6 +134,7 @@ export default function CadastroHabito() {
           style={styles.inputDescricao}
           placeholder="Digite uma descrição"
           multiline
+          placeholderTextColor="#A9A29A"
           value={descricao}
           onChangeText={setDescricao}
         />
@@ -126,7 +150,7 @@ export default function CadastroHabito() {
               <TouchableOpacity
                 key={dia}
                 style={[styles.circuloDia, selecionado && styles.circuloDiaSelecionado]}
-                onPress={() => toggleDia(dia)}
+                onPress={() => todosDia(dia)}
               >
                 <Text style={[styles.textoDia, selecionado && styles.textoDiaSelecionado]}>
                   {dia}
@@ -136,12 +160,26 @@ export default function CadastroHabito() {
           })}
         </View>
 
-        <TouchableOpacity 
-          style={styles.checkboxContainer} 
-          onPress={() => setTodosDias(!todosDias)}
-        >
-          <View style={[styles.checkbox, todosDias && styles.checkboxMarcado]} />
-          <Text style={styles.textoCampo}>Todos os dias</Text>
+        <TouchableOpacity
+          style={styles.checkboxContainer}
+          onPress={() => {
+            const novoValor = !todosDias;
+
+            setTodosDias(novoValor);
+
+            if (novoValor) {
+              setDiasSelecionados(diasDaSemana);
+            } else {
+              setDiasSelecionados([]);
+            }
+          }}
+>
+          <View style={styles.checkbox}>
+            {todosDias && (
+              <Text style={styles.checkTexto}>✓</Text>
+            )}
+          </View>
+                    <Text style={styles.textoCampo}>Todos os dias</Text>
         </TouchableOpacity>
 
         {/* Horário */}
@@ -150,7 +188,15 @@ export default function CadastroHabito() {
         </Text>
         <TouchableOpacity
           style={styles.inputHorario}
-          onPress={() => setMostrarHorario(true)}
+          onPress={() => {
+            setMostrarHorario(true);
+
+            setTimeout(() => {
+              scrollViewRef.current?.scrollToEnd({
+                animated: true,
+              });
+            }, 100);
+          }}
         >
           <Text style={styles.textoCampo}>
             {horario || 'Selecione um horário'}
@@ -159,21 +205,34 @@ export default function CadastroHabito() {
         </TouchableOpacity>
 
         {mostrarHorario && (
-          <DateTimePicker
-            value={horarioSelecionado}
-            mode="time"
-            display="spinner"
-            onChange={(_, time) => {
-              setMostrarHorario(false);
-              if (time) {
-                setHorarioSelecionado(time);
-                const hora = String(time.getHours()).padStart(2, '0');
-                const minuto = String(time.getMinutes()).padStart(2, '0');
-                setHorario(`${hora}:${minuto}`);
-              }
-            }}
-          />
-        )}
+  <View style={styles.containerHorario}>
+    
+    <DateTimePicker
+      value={horarioSelecionado}
+      mode="time"
+      display="spinner"
+      onChange={(_, time) => {
+        if (time) {
+          setHorarioSelecionado(time);
+
+          const hora = String(time.getHours()).padStart(2, '0');
+          const minuto = String(time.getMinutes()).padStart(2, '0');
+
+          setHorario(`${hora}:${minuto}`);
+        }
+      }}
+    />
+
+    <TouchableOpacity
+      onPress={() => setMostrarHorario(false)}
+    >
+      <Text style={styles.confirmarHorario}>
+        OK
+      </Text>
+    </TouchableOpacity>
+
+  </View>
+)}
 
         {/* Botão salvar */}
         <TouchableOpacity
@@ -185,6 +244,8 @@ export default function CadastroHabito() {
           </Text>
         </TouchableOpacity>
 
+        </ScrollView>
+
       </View>
     </TouchableWithoutFeedback>
   );
@@ -195,26 +256,26 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FDF6EA',
     paddingHorizontal: 21,
-    paddingTop: 60,
+    paddingTop: 80,
   },
   cabecalho: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 28,
   },
   voltar: {
     fontSize: 30,
     color: '#2C3E21',
-    marginRight: 35,
+    marginRight: 45,
   },
   tituloPagina: {
-    fontSize: 22,
+    fontSize: 24,
     color: '#2C3E21',
     letterSpacing: 0.5,
-    fontFamily: 'serif',
+    fontFamily: 'Iowan Old Style',
   },
   label: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#2C3E21',
     marginBottom: 5,
     marginLeft: 1,
@@ -226,7 +287,7 @@ const styles = StyleSheet.create({
     borderColor: '#D4C3B3',
     borderRadius: 18,
     paddingHorizontal: 14,
-    fontSize: 13,
+    fontSize: 12,
     color: '#2C3E21',
     marginBottom: 10,
     backgroundColor: '#FFFFFF',
@@ -241,7 +302,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E5E5E5',
   },
   inputDescricao: {
     height: 60,
@@ -325,25 +386,36 @@ const styles = StyleSheet.create({
     fontWeight: 'normal',
     fontSize: 12,
   },
+  containerHorario: {
+  alignItems: 'center',
+  marginTop: 10,
+},
+
+confirmarHorario: {
+  fontSize: 15,
+  color: '#40543B',
+  fontWeight: 'bold',
+  marginTop: 8,
+},
   botaoSalvar: {
     width: 200,
-    height: 50,
+    height: 60,
     backgroundColor: '#3B4D28',
-    borderRadius: 8,
+    borderRadius: 5,
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
-    marginTop: 10,
+    marginTop: 70,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 4,
   },
   textoSalvar: {
     color: '#E6CCB2',
-    fontSize: 18,
+    fontSize: 20,
     letterSpacing: 0.5,
-    fontFamily: 'serif',
+    fontFamily: 'Iowan Old Style',
   },
 });

@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import AddModal from '../componentes/modal-home';
 import Saudacao from '../componentes/Saudacao';
 import SeletorDias from '../componentes/SeletorDias';
 import CardTarefa from '../componentes/CardTarefa';
-
+import CardHabito from '../componentes/CardHabito';
+import { collection, getDocs,} from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 
 
 export default function App() {
@@ -17,7 +19,93 @@ export default function App() {
   const [tarefas, setTarefas] = useState([]);
   const [habitos, setHabitos] = useState([]);
   const [tipoCadastro, setTipoCadastro] = useState(null);
-  
+
+  const buscarHabitos = async () => {
+
+      const resultado = await getDocs(
+        collection(db, 'habitos')
+      );
+
+      const listaHabitos = resultado.docs.map((documento) => ({
+        id: documento.id,
+        ...documento.data(),
+      }));
+
+      setHabitos(listaHabitos);
+      console.log('Hábitos carregados do Firestore:', listaHabitos);
+
+      const diasDaSemana = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+
+      const hoje = new Date();
+
+      const diaAtual = diasDaSemana[hoje.getDay()];
+
+      const habitosDeHoje = listaHabitos.filter((habito) =>
+        habito.dias.includes(diaAtual)
+      );
+
+      
+setHabitos(habitosDeHoje);
+
+      console.log('Dia atual:', diaAtual);
+      console.log('Hábitos de hoje:', habitosDeHoje);
+    };
+
+    const buscarTarefas = async () => {
+
+    const resultado = await getDocs(
+      collection(db, 'tarefas')
+    );
+
+    const listaTarefas = resultado.docs.map((documento) => ({
+      id: documento.id,
+      ...documento.data(),
+    }));
+
+    console.log(
+      'Tarefas carregadas do Firestore:',
+      listaTarefas
+    );
+
+    const hoje = new Date();
+
+    const dia = String(hoje.getDate()).padStart(2, '0');
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const ano = hoje.getFullYear();
+
+    const dataHoje = `${dia}/${mes}/${ano}`;
+
+    const tarefasDeHoje = listaTarefas.filter(
+      (tarefa) => tarefa.data === dataHoje
+    );
+
+    console.log('Data de hoje:', dataHoje);
+    console.log('Tarefas de hoje:', tarefasDeHoje);
+
+    setTarefas(tarefasDeHoje);
+  };
+
+    useFocusEffect(
+      React.useCallback(() => {
+        buscarHabitos();
+        buscarTarefas();
+      }, [])
+    );
+
+    const itensDeHoje = [
+      ...habitos.map((habito) => ({
+        ...habito,
+        tipo: 'habito',
+      })),
+
+      ...tarefas.map((tarefa) => ({
+        ...tarefa,
+        tipo: 'tarefa',
+      })),
+    ].sort((a, b) =>
+      a.horario.localeCompare(b.horario)
+    );
+      
   return (
     <View  style={[styles.container]}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
@@ -38,94 +126,29 @@ export default function App() {
         {/* Lista de Hábitos em Cards */}
 
         <Text style={styles.secaoTitulo}>MEU DAILY DE HOJE:</Text>
-           <CardTarefa />
+          {itensDeHoje.map((item) =>
+            item.tipo === 'habito' ? (
+              <CardHabito
+                key={item.id}
+                item={item}
+              />
+            ) : (
+              <CardTarefa
+                key={item.id}
+                item={item}
+                onExcluir={(id) => {
+                  setTarefas((tarefasAtuais) =>
+                    tarefasAtuais.filter(
+                      (tarefa) => tarefa.id !== id
+                    )
+                  );
+                }}
+              />
+            )
+          )}
+          
 
-          <View style={styles.tarefaWrapper}>
-          <View style={styles.checkboxContainer}>
-            <View style={styles.checkboxChecked}>
-              <Feather name="check" size={14} color="#556B2F" />
-            </View>
-          </View>
-          <View style={styles.cardTarefa}>
-            <View style={[styles.iconeBox, { backgroundColor: '#E1F0F7' }]}>
-              <Ionicons name="water-outline" size={22} color="#3498DB" />
-            </View>
-            <View>
-              <Text style={styles.tarefaTitulo}>08:00 - Beber Água</Text>
-              <Text style={styles.tarefaSub}>200 ml</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.tarefaWrapper}>
-          <View style={styles.checkboxContainer}>
-            <View style={styles.checkboxChecked}>
-              <Feather name="check" size={14} color="#556B2F" />
-            </View>
-          </View>
-          <View style={styles.cardTarefa}>
-            <View style={[styles.iconeBox, { backgroundColor: '#FADBD8' }]}>
-              <MaterialCommunityIcons name="office-building" size={22} color="#C0392B" />
-            </View>
-            <View>
-              <Text style={styles.tarefaTitulo}>09:00 - Reunião</Text>
-              <Text style={styles.tarefaSub}>200 ml</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.tarefaWrapper}>
-          <View style={styles.checkboxContainer}>
-            <View style={styles.checkboxUnchecked} />
-          </View>
-          <View style={styles.cardTarefa}>
-            <View style={[styles.iconeBox, { backgroundColor: '#FCE4D6' }]}>
-              <Feather name="home" size={22} color="#E67E22" />
-            </View>
-            <View>
-              <Text style={styles.tarefaTitulo}>10:00 - Faxina</Text>
-              <Text style={styles.tarefaSub}>Cozinha</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.tarefaWrapper}>
-          <View style={styles.checkboxContainer}>
-            <View style={styles.checkboxUnchecked} />
-          </View>
-          <View style={styles.cardTarefa}>
-            <View style={[styles.iconeBox, { backgroundColor: '#D4EFDF' }]}>
-              <Ionicons name="heart-outline" size={22} color="#27AE60" />
-            </View>
-            <View>
-              <Text style={styles.tarefaTitulo}>12:00 - Almoço</Text>
-              <Text style={styles.tarefaSub}>Comer Salada e 120g de proteína</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.tarefaWrapper}>
-          <View style={styles.checkboxContainer}>
-            <View style={styles.checkboxUnchecked} />
-          </View>
-          <View style={styles.cardTarefa}>
-            <View style={[styles.iconeBox, { backgroundColor: '#EBDEF0' }]}>
-              <Ionicons name="book-outline" size={22} color="#8E44AD" />
-            </View>
-            <View>
-              <Text style={styles.tarefaTitulo}>14:00 - Estudar</Text>
-              <Text style={styles.tarefaSub}>2 horas</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Botão de Adicionar Flutuante */}
-        <TouchableOpacity style={styles.botaoAdicionarFlutuante} 
-            onPress={() => setModalVisible(true)}>
-                <Text style={styles.sinalMais}>+</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.secaoTituloProgresso}>MEU PROGRESSO:</Text>
+         <Text style={styles.secaoTituloProgresso}>MEU PROGRESSO:</Text>
 
         {/* Barra de Progresso */}
         <View style={styles.progressoBarraFundo}>
@@ -135,6 +158,12 @@ export default function App() {
 
         <View style={{ height: 100 }} />
       </ScrollView>
+
+      {/* Botão de Adicionar Flutuante */}
+        <TouchableOpacity style={styles.botaoAdicionarFlutuante} 
+            onPress={() => setModalVisible(true)}>
+                <Text style={styles.sinalMais}>+</Text>
+        </TouchableOpacity>
 
       <AddModal 
         visible={modalVisible}
@@ -161,6 +190,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FBF9F1',
     paddingTop: 60,
+    paddingBottom: 50,
   },
   scrollContainer: {
     paddingHorizontal: 20,
@@ -258,7 +288,7 @@ const styles = StyleSheet.create({
   botaoAdicionarFlutuante: {
     position: 'absolute',
     right: 20,
-    bottom: 50,
+    bottom: 80,
     width: 60,
     height: 60,
     borderRadius: 40,

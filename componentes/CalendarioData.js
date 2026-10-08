@@ -179,9 +179,9 @@ export default function CalendarioData({
                         <TouchableOpacity
                             onPress={() => {
                                 const novaData = new Date(
-                                mesAtual.getFullYear(),
-                                mesAtual.getMonth(),
-                                diaSelecionado
+                                dataSelecionada.getFullYear(),
+                                dataSelecionada.getMonth(),
+                                dataSelecionada.getDate()
                                 );
 
                                 onConfirmar(novaData);

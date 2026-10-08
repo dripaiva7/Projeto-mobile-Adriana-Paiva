@@ -1,24 +1,35 @@
-import React, { useState,  useRef } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert,
   PanResponder, Animated,} from 'react-native';
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { deleteDoc, doc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
 
-export default function CardTarefa({ item, onExcluir }) {
+export default function CardHabito({ item }) {
+
+    const iconesCategoria = {
+        'SAÚDE': 'heart-pulse',
+        'ESTUDOS': 'book-open-page-variant',
+        'TRABALHO': 'briefcase-outline',
+        'BEM-ESTAR': 'flower-outline',
+        'OUTRA': 'dots-horizontal-circle-outline',
+    };
+
+    const coresCategoria = {
+        'SAÚDE': '#D98B8B',
+        'ESTUDOS': '#7A9CC6',
+        'TRABALHO': '#C49A6C',
+        'BEM-ESTAR': '#8FAF7B',
+        'OUTRA': '#9B8FB5',
+    };
 
     const [concluida, setConcluida] = useState(false);
 
-  const posicao = useRef(new Animated.Value(0)).current;
+    const posicao = new Animated.Value(0);
 
-  const panResponder = PanResponder.create({
-    onMoveShouldSetPanResponderCapture: (_, gesture) => {
-        return (
-          Math.abs(gesture.dx) > 10 &&
-          Math.abs(gesture.dx) > Math.abs(gesture.dy)
-        );
-      },
+    const panResponder = PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) => {
+        return Math.abs(gesture.dx) > 10;
+        },
 
     onPanResponderMove: (_, gesture) => {
       if (gesture.dx < 0) {
@@ -27,7 +38,7 @@ export default function CardTarefa({ item, onExcluir }) {
     },
 
     onPanResponderRelease: (_, gesture) => {
-      if (gesture.dx < -30) {
+      if (gesture.dx < -50) {
         Alert.alert(
           'Excluir tarefa',
           'Deseja realmente excluir esta tarefa?',
@@ -45,20 +56,8 @@ export default function CardTarefa({ item, onExcluir }) {
             {
               text: 'Excluir',
               style: 'destructive',
-              onPress: async () => {
-                try {
-                  await deleteDoc(
-                    doc(db, 'tarefas', item.id)
-                  );
-
-                  console.log('Tarefa excluída:', item.id);
-
-                  onExcluir(item.id);
-
-                } catch (erro) {
-                  console.log('Erro ao excluir tarefa:', erro);
-                }
-
+              onPress: () => {
+                // exclusão real será feita depois
                 Animated.spring(posicao, {
                   toValue: 0,
                   useNativeDriver: true,
@@ -102,9 +101,12 @@ export default function CardTarefa({ item, onExcluir }) {
         <View style={styles.card}>
 
         {/* Ícone da tarefa */}
-        <View style={styles.iconeContainer}>
+        <View style={[ styles.iconeContainer,
+                { backgroundColor: coresCategoria[item.categoria] },
+            ]}
+            >
             <MaterialCommunityIcons
-            name="pencil-outline"
+            name={iconesCategoria[item.categoria]}
             size={21}
             color="#FFFFFF"
             />
@@ -114,11 +116,11 @@ export default function CardTarefa({ item, onExcluir }) {
         <View style={styles.conteudo}>
 
             <Text style={styles.linhaTitulo}>
-              {item.horario} - {item.titulo}
+                {item.horario} - {item.titulo}
             </Text>
 
             <Text style={styles.descricao}>
-              {item.descricao}
+                {item.descricao}
             </Text>
 
         </View>
@@ -177,7 +179,6 @@ checkMarcado: {
     width: 38,
     height: 38,
     borderRadius: 10,
-    backgroundColor: '#307c96',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,

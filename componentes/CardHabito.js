@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert,
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-export default function CardHabito({ item }) {
+export default function CardHabito({ item, onAlternarConclusao }) {
 
     const iconesCategoria = {
         'SAÚDE': 'heart-pulse',
@@ -87,12 +87,17 @@ export default function CardHabito({ item }) {
 >
 
         <TouchableOpacity
-            style={[
-                styles.check,
-                concluida && styles.checkMarcado,
-            ]}
-            onPress={() => setConcluida(!concluida)}
-            >
+          style={[
+            styles.check,
+            concluida && styles.checkMarcado,
+          ]}
+          onPress={() => {
+            const novoEstado = !concluida;
+
+            setConcluida(novoEstado);
+            onAlternarConclusao(item.id, novoEstado);
+          }}
+        >
             {concluida && (
                 <Text style={styles.checkTexto}>✓</Text>
             )}

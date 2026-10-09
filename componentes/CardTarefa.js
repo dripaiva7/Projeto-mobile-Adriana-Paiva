@@ -6,7 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
-export default function CardTarefa({ item, onExcluir }) {
+export default function CardTarefa({ item, onExcluir, onAlternarConclusao, }) {
 
     const [concluida, setConcluida] = useState(false);
 
@@ -89,11 +89,16 @@ export default function CardTarefa({ item, onExcluir }) {
 
         <TouchableOpacity
             style={[
-                styles.check,
-                concluida && styles.checkMarcado,
+              styles.check,
+              concluida && styles.checkMarcado,
             ]}
-            onPress={() => setConcluida(!concluida)}
-            >
+            onPress={() => {
+              const novoEstado = !concluida;
+
+              setConcluida(novoEstado);
+              onAlternarConclusao(item.id, novoEstado);
+            }}
+          >
             {concluida && (
                 <Text style={styles.checkTexto}>✓</Text>
             )}

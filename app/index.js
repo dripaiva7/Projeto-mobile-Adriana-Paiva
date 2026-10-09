@@ -7,6 +7,7 @@ import Saudacao from '../componentes/Saudacao';
 import SeletorDias from '../componentes/SeletorDias';
 import CardTarefa from '../componentes/CardTarefa';
 import CardHabito from '../componentes/CardHabito';
+import BarraProgresso from '../componentes/BarraProgresso';
 import { collection, getDocs,} from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
@@ -19,6 +20,7 @@ export default function App() {
   const [tarefas, setTarefas] = useState([]);
   const [habitos, setHabitos] = useState([]);
   const [tipoCadastro, setTipoCadastro] = useState(null);
+  const [itensConcluidos, setItensConcluidos] = useState([]);
 
   const buscarHabitos = async () => {
 
@@ -105,6 +107,16 @@ setHabitos(habitosDeHoje);
     ].sort((a, b) =>
       a.horario.localeCompare(b.horario)
     );
+
+    const totalItens = itensDeHoje.length;
+
+    const totalConcluidos = itensConcluidos.length;
+
+    const porcentagemProgresso = totalItens > 0
+      ? (totalConcluidos / totalItens) * 100
+      : 0;
+
+    
       
   return (
     <View  style={[styles.container]}>
@@ -131,6 +143,19 @@ setHabitos(habitosDeHoje);
               <CardHabito
                 key={item.id}
                 item={item}
+                onAlternarConclusao={(id, concluido) => {
+                  setItensConcluidos((itensAtuais) => {
+                    if (concluido) {
+                      return itensAtuais.includes(id)
+                        ? itensAtuais
+                        : [...itensAtuais, id];
+                    }
+
+                    return itensAtuais.filter(
+                      (itemId) => itemId !== id
+                    );
+                  });
+                }}
               />
             ) : (
               <CardTarefa
@@ -143,20 +168,25 @@ setHabitos(habitosDeHoje);
                     )
                   );
                 }}
+                onAlternarConclusao={(id, concluido) => {
+                  setItensConcluidos((itensAtuais) => {
+                    if (concluido) {
+                      return [...itensAtuais, id];
+                    }
+
+                    return itensAtuais.filter(
+                      (itemId) => itemId !== id
+                    );
+                  });
+                }}
               />
             )
           )}
-          
-
-         <Text style={styles.secaoTituloProgresso}>MEU PROGRESSO:</Text>
 
         {/* Barra de Progresso */}
-        <View style={styles.progressoBarraFundo}>
-          <View style={styles.progressoBarraPreenchida} />
-          <Text style={styles.progressoTextoPorcentagem}>30%</Text>
-        </View>
-
-        <View style={{ height: 100 }} />
+        <BarraProgresso
+          porcentagem={porcentagemProgresso}
+        />
       </ScrollView>
 
       {/* Botão de Adicionar Flutuante */}

@@ -18,9 +18,9 @@ export default function Layout() {
 
       <MenuNavegacao
         onInicio={() => router.push('/')}
-        onCalendario={() => {}}
-        onProgresso={() => {}}
-        onPerfil={() => {}}
+        onCalendario={() => router.push('/planner')}
+        onProgresso={() => router.push('/progresso')}
+        onPerfil={() => router.push('/perfilUsuario')}
       />
     </>
   );

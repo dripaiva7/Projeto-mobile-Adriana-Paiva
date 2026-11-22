@@ -8,7 +8,7 @@ import SeletorDias from '../componentes/SeletorDias';
 import CardTarefa from '../componentes/CardTarefa';
 import CardHabito from '../componentes/CardHabito';
 import BarraProgresso from '../componentes/BarraProgresso';
-import { collection, getDocs,} from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
 
@@ -52,6 +52,19 @@ setHabitos(habitosDeHoje);
       console.log('Dia atual:', diaAtual);
       console.log('Hábitos de hoje:', habitosDeHoje);
     };
+
+    const excluirHabito = async (id) => {
+  try {
+    await deleteDoc(doc(db, 'habitos', id));
+
+    setHabitos((habitosAtuais) =>
+      habitosAtuais.filter((habito) => habito.id !== id)
+    );
+
+  } catch (erro) {
+    console.log('Erro ao excluir hábito:', erro);
+  }
+};
 
     const buscarTarefas = async () => {
 
@@ -143,6 +156,7 @@ setHabitos(habitosDeHoje);
               <CardHabito
                 key={item.id}
                 item={item}
+                onExcluir={excluirHabito}
                 onAlternarConclusao={(id, concluido) => {
                   setItensConcluidos((itensAtuais) => {
                     if (concluido) {

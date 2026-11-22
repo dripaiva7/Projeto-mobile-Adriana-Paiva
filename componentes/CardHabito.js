@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert,
   PanResponder, Animated,} from 'react-native';
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-export default function CardHabito({ item, onAlternarConclusao }) {
+export default function CardHabito({ item, onAlternarConclusao, onExcluir }) {
 
     const iconesCategoria = {
         'SAÚDE': 'heart-pulse',
@@ -22,7 +22,14 @@ export default function CardHabito({ item, onAlternarConclusao }) {
         'OUTRA': '#9B8FB5',
     };
 
-    const [concluida, setConcluida] = useState(false);
+    const [concluida, setConcluida] = useState(
+  item.status === 'concluido'
+);
+useEffect(() => {
+  setConcluida(item.status === 'concluido');
+}, [item.status]);
+
+const naoRealizada = item.status === 'nao_realizado';
 
     const posicao = new Animated.Value(0);
 
@@ -40,32 +47,33 @@ export default function CardHabito({ item, onAlternarConclusao }) {
     onPanResponderRelease: (_, gesture) => {
       if (gesture.dx < -50) {
         Alert.alert(
-          'Excluir tarefa',
-          'Deseja realmente excluir esta tarefa?',
-          [
-            {
-              text: 'Cancelar',
-              style: 'cancel',
-              onPress: () => {
-                Animated.spring(posicao, {
-                  toValue: 0,
-                  useNativeDriver: true,
-                }).start();
-              },
-            },
-            {
-              text: 'Excluir',
-              style: 'destructive',
-              onPress: () => {
-                // exclusão real será feita depois
-                Animated.spring(posicao, {
-                  toValue: 0,
-                  useNativeDriver: true,
-                }).start();
-              },
-            },
-          ]
-        );
+  'Excluir hábito',
+  'Tem certeza que deseja excluir?',
+  [
+    {
+      text: 'Cancelar',
+      style: 'cancel',
+      onPress: () => {
+        Animated.spring(posicao, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+      },
+    },
+    {
+      text: 'Excluir',
+      style: 'destructive',
+      onPress: () => {
+        onExcluir(item.id);
+
+        Animated.spring(posicao, {
+          toValue: 0,
+          useNativeDriver: true,
+        }).start();
+      },
+    },
+  ]
+);
       } else {
         Animated.spring(posicao, {
           toValue: 0,
@@ -87,10 +95,11 @@ export default function CardHabito({ item, onAlternarConclusao }) {
 >
 
         <TouchableOpacity
-          style={[
-            styles.check,
-            concluida && styles.checkMarcado,
-          ]}
+  style={[
+    styles.check,
+    concluida && styles.checkMarcado,
+    naoRealizada && styles.checkNaoRealizado,
+  ]}
           onPress={() => {
             const novoEstado = !concluida;
 
@@ -98,9 +107,11 @@ export default function CardHabito({ item, onAlternarConclusao }) {
             onAlternarConclusao(item.id, novoEstado);
           }}
         >
-            {concluida && (
-                <Text style={styles.checkTexto}>✓</Text>
-            )}
+            {concluida && <Text style={styles.checkTexto}>✓</Text>}
+
+{naoRealizada && (
+  <Text style={styles.checkTextoNaoRealizado}>×</Text>
+)}
         </TouchableOpacity>
 
         <View style={styles.card}>
@@ -164,6 +175,12 @@ checkTexto: {
 checkMarcado: {
   backgroundColor: '#39690b',
   borderColor: '#D4A373',
+},
+
+checkTextoNaoRealizado: {
+  color: '#C47A65',
+  fontSize: 24,
+  fontWeight: 'bold',
 },
 
   card: {

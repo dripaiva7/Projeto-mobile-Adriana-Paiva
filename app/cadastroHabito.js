@@ -60,12 +60,13 @@ export default function CadastroHabito() {
   }
 
   const novoHabito = {
-    categoria: categoria,
-    titulo: titulo,
-    descricao: descricao,
-    dias: diasSelecionados,
-    horario: horario,
-  };
+  categoria: categoria,
+  titulo: titulo,
+  descricao: descricao,
+  dias: diasSelecionados,
+  horario: horario,
+  dataCriacao: new Date().toISOString(),
+};
 
   await addDoc(
       collection(db, 'habitos'), novoHabito);

@@ -1,208 +1,209 @@
-import React, { useState,  useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert,
-  PanResponder, Animated,} from 'react-native';
 
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 
-export default function CardTarefa({ item, onExcluir, onAlternarConclusao, }) {
+export default function CardTarefa({
+  item,
+  onExcluir,
+  onAlternarConclusao,
+  onEditar,
+}) {
+  const [concluida, setConcluida] = useState(false);
 
-    const [concluida, setConcluida] = useState(false);
+  const alternarConclusao = () => {
+    const novoEstado = !concluida;
+    setConcluida(novoEstado);
 
-  const posicao = useRef(new Animated.Value(0)).current;
+    if (onAlternarConclusao) {
+      onAlternarConclusao(item.id, novoEstado);
+    }
+  };
 
-  const panResponder = PanResponder.create({
-    onMoveShouldSetPanResponderCapture: (_, gesture) => {
-        return (
-          Math.abs(gesture.dx) > 10 &&
-          Math.abs(gesture.dx) > Math.abs(gesture.dy)
-        );
+  const confirmarExclusao = () => {
+    Alert.alert(
+      'Excluir tarefa',
+      'Tem certeza de que deseja excluir esta tarefa?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: excluirTarefa,
+        },
+      ]
+    );
+  };
+
+  const excluirTarefa = async () => {
+    try {
+      await deleteDoc(doc(db, 'tarefas', item.id));
+
+      if (onExcluir) {
+        onExcluir(item.id);
+      }
+    } catch (error) {
+      console.error('Erro ao excluir tarefa:', error);
+      Alert.alert('Erro', 'Não foi possível excluir a tarefa.');
+    }
+  };
+
+  const abrirMenu = () => {
+    Alert.alert('Opções da tarefa', item.titulo, [
+      {
+        text: 'Editar',
+        onPress: () => {
+          if (onEditar) {
+            onEditar(item.id);
+          }
+        },
       },
-
-    onPanResponderMove: (_, gesture) => {
-      if (gesture.dx < 0) {
-        posicao.setValue(gesture.dx);
-      }
-    },
-
-    onPanResponderRelease: (_, gesture) => {
-      if (gesture.dx < -30) {
-        Alert.alert(
-          'Excluir tarefa',
-          'Deseja realmente excluir esta tarefa?',
-          [
-            {
-              text: 'Cancelar',
-              style: 'cancel',
-              onPress: () => {
-                Animated.spring(posicao, {
-                  toValue: 0,
-                  useNativeDriver: true,
-                }).start();
-              },
-            },
-            {
-              text: 'Excluir',
-              style: 'destructive',
-              onPress: async () => {
-                try {
-                  await deleteDoc(
-                    doc(db, 'tarefas', item.id)
-                  );
-
-                  console.log('Tarefa excluída:', item.id);
-
-                  onExcluir(item.id);
-
-                } catch (erro) {
-                  console.log('Erro ao excluir tarefa:', erro);
-                }
-
-                Animated.spring(posicao, {
-                  toValue: 0,
-                  useNativeDriver: true,
-                }).start();
-              },
-            },
-          ]
-        );
-      } else {
-        Animated.spring(posicao, {
-          toValue: 0,
-          useNativeDriver: true,
-        }).start();
-      }
-    },
-  });
+      {
+        text: 'Excluir',
+        style: 'destructive',
+        onPress: confirmarExclusao,
+      },
+      {
+        text: 'Cancelar',
+        style: 'cancel',
+      },
+    ]);
+  };
 
   return (
-    <Animated.View
-  style={[
-    styles.linha,
-    {
-      transform: [{ translateX: posicao }],
-    },
-  ]}
-  {...panResponder.panHandlers}
->
+    <View style={styles.card}>
+      <TouchableOpacity
+        style={styles.checkbox}
+        onPress={alternarConclusao}
+      >
+        <MaterialCommunityIcons
+          name={concluida ? 'checkbox-marked-circle' : 'checkbox-blank-circle-outline'}
+          size={25}
+          color={concluida ? '#40543B' : '#A6A6A6'}
+        />
+      </TouchableOpacity>
 
-        <TouchableOpacity
+      <View style={styles.iconeContainer}>
+        <MaterialCommunityIcons
+          name="pencil-outline"
+          size={23}
+          color="#40543B"
+        />
+      </View>
+
+      <View style={styles.conteudo}>
+        <View style={styles.linhaTitulo}>
+          <Text
             style={[
-              styles.check,
-              concluida && styles.checkMarcado,
+              styles.horario,
+              concluida && styles.textoConcluido,
             ]}
-            onPress={() => {
-              const novoEstado = !concluida;
-
-              setConcluida(novoEstado);
-              onAlternarConclusao(item.id, novoEstado);
-            }}
           >
-            {concluida && (
-                <Text style={styles.checkTexto}>✓</Text>
-            )}
-        </TouchableOpacity>
+            {item.horario}
+          </Text>
 
-        <View style={styles.card}>
-
-        {/* Ícone da tarefa */}
-        <View style={styles.iconeContainer}>
-            <MaterialCommunityIcons
-            name="pencil-outline"
-            size={21}
-            color="#FFFFFF"
-            />
+          <Text
+            style={[
+              styles.titulo,
+              concluida && styles.textoConcluido,
+            ]}
+            numberOfLines={1}
+          >
+            {item.titulo}
+          </Text>
         </View>
 
-        {/* Informações da tarefa */}
-        <View style={styles.conteudo}>
+        {!!item.descricao && (
+          <Text
+            style={[
+              styles.descricao,
+              concluida && styles.textoConcluido,
+            ]}
+            numberOfLines={2}
+          >
+            {item.descricao}
+          </Text>
+        )}
+      </View>
 
-            <Text style={styles.linhaTitulo}>
-              {item.horario} - {item.titulo}
-            </Text>
-
-            <Text style={styles.descricao}>
-              {item.descricao}
-            </Text>
-
-        </View>
-
-        </View>
-
-    </Animated.View>
-    );
+      <TouchableOpacity
+        style={styles.botaoMenu}
+        onPress={abrirMenu}
+      >
+        <MaterialCommunityIcons
+          name="dots-vertical"
+          size={23}
+          color="#40543B"
+        />
+      </TouchableOpacity>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    linha: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  width: '100%',
-  marginBottom: 7,
-},
-
-check: {
-  width: 34,
-  height: 34,
-  borderRadius: 17,
-  borderWidth: 1,
-  borderColor: '#6B6175',
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginRight: 7,
-},
-
-checkTexto: {
-  fontSize: 18,
-  color: '#FBF9F1',
-  
-},
-
-checkMarcado: {
-  backgroundColor: '#39690b',
-  borderColor: '#D4A373',
-},
-
   card: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FBF9F1',
     borderRadius: 14,
     padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
+    marginBottom: 10,
     elevation: 2,
-    },
-
+  },
+  checkbox: {
+    marginRight: 10,
+  },
   iconeContainer: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    backgroundColor: '#307c96',
-    justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#E6CCB2',
     alignItems: 'center',
-    marginRight: 12,
-    },
-
+    justifyContent: 'center',
+    marginRight: 10,
+  },
   conteudo: {
     flex: 1,
     justifyContent: 'center',
   },
-
   linhaTitulo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  horario: {
+    fontSize: 12,
+    color: '#40543B',
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  titulo: {
+    flex: 1,
     fontSize: 14,
-    color: '#2C3E21',
-    fontWeight: 'bold',
+    color: '#40543B',
+    fontWeight: '600',
   },
-
   descricao: {
-    fontSize: 11,
-    color: '#7F8C8D',
-    marginTop: 2,
+    fontSize: 12,
+    color: '#777777',
+    marginTop: 4,
   },
-
+  textoConcluido: {
+    textDecorationLine: 'line-through',
+    color: '#A6A6A6',
+  },
+  botaoMenu: {
+    padding: 5,
+    marginLeft: 4,
+  },
 });

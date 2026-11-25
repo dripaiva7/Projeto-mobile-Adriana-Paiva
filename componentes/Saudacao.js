@@ -1,67 +1,91 @@
-import { View, Text, StyleSheet } from 'react-native'
-import React from 'react'
+
+import { View, Text, StyleSheet } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from 'expo-router';
 
 export default function Saudacao() {
-    const hoje = new Date();
+  const [nomeUsuario, setNomeUsuario] = useState('');
 
-    const diasDaSemana = [
-  'Domingo', 'Segunda-Feira', 'Terça-Feira',
-  'Quarta-Feira', 'Quinta-Feira', 'Sexta-feira', 'Sábado'
-    ];
+  useFocusEffect(
+    useCallback(() => {
+      const carregarNome = async () => {
+        try {
+          const nomeSalvo = await AsyncStorage.getItem('nomeUsuario');
 
-    const nomeDiasDaSemana = diasDaSemana[hoje.getDay()];
+          if (nomeSalvo) {
+            setNomeUsuario(nomeSalvo);
+          }
+        } catch (erro) {
+          console.log('Erro ao carregar nome:', erro);
+        }
+      };
 
-    const diaDoMes = hoje.getDate();
+      carregarNome();
+    }, [])
+  );
 
-    const meses = [
-        'de Janeiro', 'de Fevereiro', 'de Março', 'de Abril',
-        'de Maio', 'de Junho', 'de Julho', 'de Agosto',
-        'de Setembro', 'de Outubro', 'de Novembro', 'de Dezembro'
-        ];
+  const hoje = new Date();
 
-    const nomeDoMes = meses[hoje.getMonth()];
+  const diasDaSemana = [
+    'Domingo', 'Segunda-Feira', 'Terça-Feira',
+    'Quarta-Feira', 'Quinta-Feira', 'Sexta-feira', 'Sábado'
+  ];
 
-    const ano = hoje.getFullYear();
+  const meses = [
+    'de Janeiro', 'de Fevereiro', 'de Março', 'de Abril',
+    'de Maio', 'de Junho', 'de Julho', 'de Agosto',
+    'de Setembro', 'de Outubro', 'de Novembro', 'de Dezembro'
+  ];
 
-    const horaAtual = hoje.getHours();
+  const nomeDiasDaSemana = diasDaSemana[hoje.getDay()];
+  const diaDoMes = hoje.getDate();
+  const nomeDoMes = meses[hoje.getMonth()];
+  const ano = hoje.getFullYear();
 
-    let textoSaudacao;
+  const horaAtual = hoje.getHours();
 
-    if(horaAtual < 12) {
-        textoSaudacao = 'BOM DIA';
-    } else if (12 < horaAtual < 18) {
-        textoSaudacao = 'BOA TARDE';
-    } else {
-        textoSaudacao = 'BOA NOITE';
-    }
+  let textoSaudacao;
 
-    const dataSaudacao =  nomeDiasDaSemana + ', ' +  diaDoMes + ' ' +  nomeDoMes + ' de ' +  ano;
+  if (horaAtual < 12) {
+    textoSaudacao = 'BOM DIA';
+  } else if (horaAtual < 18) {
+    textoSaudacao = 'BOA TARDE';
+  } else {
+    textoSaudacao = 'BOA NOITE';
+  }
+
+  const dataSaudacao = `${nomeDiasDaSemana}, ${diaDoMes} ${nomeDoMes} de ${ano}`;
 
   return (
     <View style={style.container}>
-      <Text style={style.saudacao}>{textoSaudacao}, ADRIANA!</Text>
-      <Text style={style.data}>{dataSaudacao}</Text>
+      <Text style={style.saudacao}>
+        {textoSaudacao}{nomeUsuario ? `, ${nomeUsuario.toUpperCase()}!` : '!'}
+      </Text>
+
+      <Text style={style.data}>
+        {dataSaudacao}
+      </Text>
     </View>
-  )
+  );
 }
 
 const style = StyleSheet.create({
-    container:{
+  container: {
     alignItems: 'flex-start',
-     },
+  },
 
-    saudacao: {
+  saudacao: {
     fontSize: 20,
     color: '#2C3E21',
     fontWeight: 'bold',
     letterSpacing: 0.5,
     fontFamily: 'Iowan Old Style',
-    },
+  },
 
-    data: {
+  data: {
     fontSize: 12,
     color: '#7F8C8D',
     marginTop: 2,
   },
-
 });

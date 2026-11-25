@@ -4,14 +4,15 @@
     "slug": "MDB",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo-mdb.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.adrianapaiva.mydailybloom",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logo-mdb.png",
         "backgroundColor": "#ffffff"
       }
     },
@@ -22,7 +23,18 @@
       "expo-status-bar",
       "expo-font",
       "expo-router",
-      "@react-native-community/datetimepicker"
-    ]
+      "@react-native-community/datetimepicker",
+      "expo-notifications"
+    ],
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "b67d6ff7-52c2-4b44-b96b-4297efd04b32"
+      }
+    }
   }
 }

@@ -79,7 +79,7 @@ export default function CadastroHabito() {
     [
       {
         text: 'OK',
-        onPress: () => router.back(),
+        onPress: () => router.dismissAll(),
       },
     ]
   );

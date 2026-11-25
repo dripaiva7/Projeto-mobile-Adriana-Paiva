@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import AddModal from '../componentes/modal-home';
@@ -10,63 +11,106 @@ import CardHabito from '../componentes/CardHabito';
 import BarraProgresso from '../componentes/BarraProgresso';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import {
+  gerarRegistrosHabitos,
+  atualizarStatusHabito,
+} from '../servicos/registrosHabitos';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
 export default function App() {
   const router = useRouter();
-  
+
   const [tela, setTela] = useState('inicio');
   const [modalVisible, setModalVisible] = useState(false);
   const [tarefas, setTarefas] = useState([]);
   const [habitos, setHabitos] = useState([]);
   const [tipoCadastro, setTipoCadastro] = useState(null);
   const [itensConcluidos, setItensConcluidos] = useState([]);
+  const [fotoPerfil, setFotoPerfil] = useState(null);
+
+  const formatarData = (data) => {
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const dia = String(data.getDate()).padStart(2, '0');
+
+    return `${ano}-${mes}-${dia}`;
+  };
 
   const buscarHabitos = async () => {
-
-      const resultado = await getDocs(
-        collection(db, 'habitos')
-      );
+    try {
+      const resultado = await getDocs(collection(db, 'habitos'));
 
       const listaHabitos = resultado.docs.map((documento) => ({
         id: documento.id,
         ...documento.data(),
       }));
 
-      setHabitos(listaHabitos);
-      console.log('Hábitos carregados do Firestore:', listaHabitos);
+      await gerarRegistrosHabitos(listaHabitos);
+
+      const hoje = formatarData(new Date());
 
       const diasDaSemana = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SAB'];
+      const diaAtual = diasDaSemana[new Date().getDay()];
 
-      const hoje = new Date();
-
-      const diaAtual = diasDaSemana[hoje.getDay()];
-
-      const habitosDeHoje = listaHabitos.filter((habito) =>
-        habito.dias.includes(diaAtual)
+      const resultadoRegistros = await getDocs(
+        collection(db, 'registrosHabitos')
       );
 
-      
-setHabitos(habitosDeHoje);
+      const registrosHoje = {};
 
-      console.log('Dia atual:', diaAtual);
-      console.log('Hábitos de hoje:', habitosDeHoje);
-    };
+      resultadoRegistros.docs.forEach((documento) => {
+        const registro = documento.data();
 
-    const excluirHabito = async (id) => {
-  try {
-    await deleteDoc(doc(db, 'habitos', id));
+        if (registro.data === hoje) {
+          registrosHoje[registro.habitoId] = registro;
+        }
+      });
 
-    setHabitos((habitosAtuais) =>
-      habitosAtuais.filter((habito) => habito.id !== id)
-    );
+      const habitosDeHoje = listaHabitos
+        .filter((habito) => habito.dias.includes(diaAtual))
+        .map((habito) => ({
+          ...habito,
+          status: registrosHoje[habito.id]?.status || 'pendente',
+        }));
 
-  } catch (erro) {
-    console.log('Erro ao excluir hábito:', erro);
-  }
-};
+      setHabitos(habitosDeHoje);
 
-    const buscarTarefas = async () => {
+      setItensConcluidos((itensAtuais) => {
+        const idsHabitos = listaHabitos.map((habito) => habito.id);
+
+        const outrosItens = itensAtuais.filter(
+          (id) => !idsHabitos.includes(id)
+        );
+
+        const habitosConcluidos = habitosDeHoje
+          .filter((habito) => habito.status === 'concluido')
+          .map((habito) => habito.id);
+
+        return [...outrosItens, ...habitosConcluidos];
+      });
+
+      console.log('Hábitos de hoje com status:', habitosDeHoje);
+
+    } catch (erro) {
+      console.log('Erro ao buscar hábitos:', erro);
+    }
+  };
+
+  const excluirHabito = async (id) => {
+    try {
+      await deleteDoc(doc(db, 'habitos', id));
+
+      setHabitos((habitosAtuais) =>
+        habitosAtuais.filter((habito) => habito.id !== id)
+      );
+
+    } catch (erro) {
+      console.log('Erro ao excluir hábito:', erro);
+    }
+  };
+
+  const buscarTarefas = async () => {
 
     const resultado = await getDocs(
       collection(db, 'tarefas')
@@ -100,48 +144,72 @@ setHabitos(habitosDeHoje);
     setTarefas(tarefasDeHoje);
   };
 
-    useFocusEffect(
-      React.useCallback(() => {
-        buscarHabitos();
-        buscarTarefas();
-      }, [])
-    );
+  useFocusEffect(
+    React.useCallback(() => {
+      const carregarFoto = async () => {
+        try {
+          const fotoSalva = await AsyncStorage.getItem('fotoPerfil');
+          setFotoPerfil(fotoSalva);
+        } catch (erro) {
+          console.log('Erro ao carregar foto de perfil:', erro);
+        }
+      };
 
-    const itensDeHoje = [
-      ...habitos.map((habito) => ({
-        ...habito,
-        tipo: 'habito',
-      })),
+      carregarFoto();
+    }, [])
+  );
 
-      ...tarefas.map((tarefa) => ({
-        ...tarefa,
-        tipo: 'tarefa',
-      })),
-    ].sort((a, b) =>
-      a.horario.localeCompare(b.horario)
-    );
+  useFocusEffect(
+    React.useCallback(() => {
+      buscarHabitos();
+      buscarTarefas();
+    }, [])
+  );
 
-    const totalItens = itensDeHoje.length;
 
-    const totalConcluidos = itensConcluidos.length;
+  const itensDeHoje = [
+    ...habitos.map((habito) => ({
+      ...habito,
+      tipo: 'habito',
+    })),
 
-    const porcentagemProgresso = totalItens > 0
-      ? (totalConcluidos / totalItens) * 100
-      : 0;
+    ...tarefas.map((tarefa) => ({
+      ...tarefa,
+      tipo: 'tarefa',
+    })),
+  ].sort((a, b) =>
+    a.horario.localeCompare(b.horario)
+  );
 
-    
-      
+  const totalItens = itensDeHoje.length;
+
+  const totalConcluidos = itensConcluidos.length;
+
+  const porcentagemProgresso = totalItens > 0
+    ? (totalConcluidos / totalItens) * 100
+    : 0;
+
+
   return (
-    <View  style={[styles.container]}>
+    <View style={[styles.container]}>
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
-        
+
         {/* Cabeçalho */}
         <View style={styles.header}>
           <View>
             <Saudacao />
           </View>
           <View style={styles.avatarContainer}>
-            <View style={styles.avatarFoto} />
+            {fotoPerfil ? (
+              <Image
+                source={{ uri: fotoPerfil }}
+                style={styles.avatarFoto}
+              />
+            ) : (
+              <View style={styles.avatarFoto}>
+                <Feather name="user" size={25} color="#40543B" />
+              </View>
+            )}
           </View>
         </View>
 
@@ -149,15 +217,26 @@ setHabitos(habitosDeHoje);
         <SeletorDias />
 
         {/* Lista de Hábitos em Cards */}
-
         <Text style={styles.secaoTitulo}>MEU DAILY DE HOJE:</Text>
-          {itensDeHoje.map((item) =>
-            item.tipo === 'habito' ? (
-              <CardHabito
-                key={item.id}
-                item={item}
-                onExcluir={excluirHabito}
-                onAlternarConclusao={(id, concluido) => {
+
+        {itensDeHoje.map((item) =>
+          item.tipo === 'habito' ? (
+            <CardHabito
+              key={item.id}
+              item={item}
+              onExcluir={excluirHabito}
+              onEditar={(id) =>
+                router.push({
+                  pathname: '/editarHabito',
+                  params: { habitoId: id },
+                })
+              }
+              onAlternarConclusao={async (id, concluido) => {
+                try {
+                  const hoje = formatarData(new Date());
+
+                  await atualizarStatusHabito(id, hoje, concluido);
+
                   setItensConcluidos((itensAtuais) => {
                     if (concluido) {
                       return itensAtuais.includes(id)
@@ -165,37 +244,47 @@ setHabitos(habitosDeHoje);
                         : [...itensAtuais, id];
                     }
 
-                    return itensAtuais.filter(
-                      (itemId) => itemId !== id
-                    );
+                    return itensAtuais.filter((itemId) => itemId !== id);
                   });
-                }}
-              />
-            ) : (
-              <CardTarefa
-                key={item.id}
-                item={item}
-                onExcluir={(id) => {
-                  setTarefas((tarefasAtuais) =>
-                    tarefasAtuais.filter(
-                      (tarefa) => tarefa.id !== id
-                    )
-                  );
-                }}
-                onAlternarConclusao={(id, concluido) => {
-                  setItensConcluidos((itensAtuais) => {
-                    if (concluido) {
-                      return [...itensAtuais, id];
-                    }
 
-                    return itensAtuais.filter(
-                      (itemId) => itemId !== id
-                    );
-                  });
-                }}
-              />
-            )
-          )}
+                  console.log('Status do hábito salvo:', id, concluido);
+
+                } catch (erro) {
+                  console.log('Erro ao salvar conclusão do hábito:', erro);
+                }
+              }}
+            />
+          ) : (
+            <CardTarefa
+              key={item.id}
+              item={item}
+              onExcluir={(id) => {
+                setTarefas((tarefasAtuais) =>
+                  tarefasAtuais.filter(
+                    (tarefa) => tarefa.id !== id
+                  )
+                );
+              }}
+              onEditar={(id) =>
+                router.push({
+                  pathname: '/editarTarefa',
+                  params: { tarefaId: id },
+                })
+              }
+              onAlternarConclusao={(id, concluido) => {
+                setItensConcluidos((itensAtuais) => {
+                  if (concluido) {
+                    return [...itensAtuais, id];
+                  }
+
+                  return itensAtuais.filter(
+                    (itemId) => itemId !== id
+                  );
+                });
+              }}
+            />
+          )
+        )}
 
         {/* Barra de Progresso */}
         <BarraProgresso
@@ -204,12 +293,12 @@ setHabitos(habitosDeHoje);
       </ScrollView>
 
       {/* Botão de Adicionar Flutuante */}
-        <TouchableOpacity style={styles.botaoAdicionarFlutuante} 
-            onPress={() => setModalVisible(true)}>
-                <Text style={styles.sinalMais}>+</Text>
-        </TouchableOpacity>
+      <TouchableOpacity style={styles.botaoAdicionarFlutuante}
+        onPress={() => setModalVisible(true)}>
+        <Text style={styles.sinalMais}>+</Text>
+      </TouchableOpacity>
 
-      <AddModal 
+      <AddModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
         onSelectType={(tipo) => {
@@ -224,7 +313,6 @@ setHabitos(habitosDeHoje);
         }}
       />
 
-      
     </View>
   );
 }
@@ -256,7 +344,9 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#ccc',
+    backgroundColor: '#E6CCB2',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   secaoTitulo: {
     fontSize: 14,

@@ -55,7 +55,7 @@ export default function CadastroTarefa() {
       [
         {
           text: 'OK',
-          onPress: () => router.back(),
+          onPress: () => router.dismissAll(),
         },
       ]
     );

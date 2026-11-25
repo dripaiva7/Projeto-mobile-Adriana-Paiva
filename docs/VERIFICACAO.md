@@ -26,16 +26,16 @@ Os itens abaixo estão pendentes de execução e confirmação.
 
 | Funcionalidade | Verificação necessária | Resultado |
 |---|---|---|
-| Boas-vindas | Informar nome e avançar | Pendente |
-| Cadastro de hábitos | Cadastrar hábito com dias da semana | Pendente |
-| Edição de hábitos | Alterar informações de um hábito | Pendente |
-| Exclusão de hábitos | Excluir um hábito | Pendente |
-| Registro diário | Marcar hábito como concluído | Pendente |
-| Planner | Consultar hábitos e tarefas por data | Pendente |
-| Cadastro de tarefas | Cadastrar tarefa com data | Pendente |
-| Histórico | Consultar registros anteriores | Pendente |
-| Progresso | Visualizar indicadores e gráficos | Pendente |
-| Perfil | Consultar e atualizar informações | Pendente |
+| Boas-vindas | Informar nome e avançar | Aprovado |
+| Cadastro de hábitos | Cadastrar hábito com dias da semana | Aprovado |
+| Edição de hábitos | Alterar informações de um hábito | Aprovado |
+| Exclusão de hábitos | Excluir um hábito | Aprovado|
+| Registro diário | Marcar hábito como concluído | Aprovado |
+| Planner | Consultar hábitos e tarefas por data | Aprovado |
+| Cadastro de tarefas | Cadastrar tarefa com data | Aprovado |
+| Histórico | Consultar registros anteriores | Aprovado |
+| Progresso | Visualizar indicadores e gráficos | Aprovado |
+| Perfil | Consultar e atualizar informações | Aprovado|
 | Foto de perfil | Selecionar uma imagem | Pendente |
 | Notificações | Ativar, desativar e configurar horários | Pendente |
 
@@ -85,7 +85,9 @@ A versão Android deverá ser instalada em um dispositivo compatível e avaliada
 - Persistência dos dados;
 - Estabilidade durante o uso.
 
-**Status da validação:** Pendente de execução.
+**Status da validação:** APK Android gerada com sucesso, mas a instalação em dispositivo físico não foi realizada, pois a responsável pelo projeto não dispõe de um dispositivo Android para o teste.
+
+**Limitação:** a validação em dispositivo físico Android permanece pendente.~
 
 ## 8. Considerações finais
 
@@ -94,3 +96,5 @@ A validação do MDB deve considerar tanto os requisitos funcionais definidos no
 Os resultados deste documento deverão ser atualizados após cada rodada de testes, registrando aprovações, falhas e limitações encontradas.
 
 Nenhum teste deve ser considerado aprovado sem evidência de sua execução.
+
+Os testes funcionais foram considerados satisfatórios pela responsável pelo projeto no ambiente de desenvolvimento. A validação da instalação da APK em dispositivo físico Android permanece pendente.
